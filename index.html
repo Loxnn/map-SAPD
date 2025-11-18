@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>SAPD - Entrainement 10-20</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+body { margin:0; font-family: Arial, sans-serif; background:#121212; color:white; }
+h1 { text-align:center; background:black; color:white; padding:10px; margin:0; }
+#map { height: calc(100vh - 55px); }
+
+/* MARKERS */
+.marker-icon {
+  width: 22px; height: 22px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid white;
+  box-shadow: 0 0 6px rgba(0,0,0,.5);
+  transition: transform .2s, box-shadow .2s;
+}
+.marker-icon.hover {
+  transform: scale(1.4) rotate(-45deg);
+  box-shadow: 0 0 12px yellow;
+}
+
+/* POPUP FULLSCREEN IMAGE */
+.image-popup {
+  position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,.9);
+  display:flex; justify-content:center; align-items:center;
+  flex-direction:column;
+  z-index:10000;
+  display:none;
+}
+.image-popup img {
+  max-width:90%;
+  max-height:85%;
+  border-radius:10px;
+  box-shadow:0 0 25px black;
+}
+#popupTitle {
+  font-size:32px;
+  font-weight:bold;
+  margin-bottom:15px;
+  text-shadow:0 0 10px black;
+}
+
+/* LEGEND */
+#legend {
+  position: fixed;
+  top: 70px;
+  right: 10px;
+  background: rgba(0,0,0,0.7);
+  padding: 10px 15px;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  z-index: 10000;
+}
+.legend-item {
+  display:flex; align-items:center; margin-bottom:6px;
+}
+.color-box {
+  width:20px; height:20px; margin-right:6px; border-radius:4px;
+}
+</style>
+</head>
+<body>
+
+<h1>SAPD - Entrainement 10-20</h1>
+<div id="map"></div>
+
+<!-- LEGEND -->
+<div id="legend">
+  <div class="legend-item"><div class="color-box" style="background:blue"></div>Quartier</div>
+  <div class="legend-item"><div class="color-box" style="background:red"></div>Point d'intérêt</div>
+  <div class="legend-item"><div class="color-box" style="background:white"></div>Freway / Routes</div>
+</div>
+
+<!-- Image Popup -->
+<div class="image-popup" id="imagePopup">
+  <h2 id="popupTitle"></h2>
+  <img id="popupImg">
+</div>
+
+<script>
+// === MAP ===
+const map = L.map('map', { crs:L.CRS.Simple, minZoom:-4, maxZoom:2 });
+const bounds = [[0,0],[5000,5000]];
+L.imageOverlay("https://www.grandtheftauto5.fr/images/carte/carte-gta-5.jpg", bounds).addTo(map);
+map.fitBounds(bounds);
+
+// === POINTS ===
+const points = [
+  {
+    "name": "Golf",
+    "coords": [
+      1644,
+      1823
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/CfmIDTKxpwZZ.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Chumash",
+    "coords": [
+      2080,
+      1007
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Kortz Center",
+    "coords": [
+      1739,
+      1392
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/5ZCZKicZhR6m.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Cimetière",
+    "coords": [
+      1545,
+      1604
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/FyCXbLTKewgh.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Rockford Plaza",
+    "coords": [
+      1531,
+      2215
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/a499kOHTxeSI.png",
+    "color": "#fd4e4e"
+  },
+  {
+    "name": "Canaux Vespucci",
+    "coords": [
+      1206.0549748880142,
+      1874
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "UwU Café",
+    "coords": [
+      1221.5106895615584,
+      2055.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/sOz0awArt6uE.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "PawnShop ",
+    "coords": [
+      1390.5218270666485,
+      1979
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/A8fkcWeokRL6.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hopital St Fiacre",
+    "coords": [
+      1020.4328268021645,
+      2763
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/5AMuKbybDI7L.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Flamme Olympique",
+    "coords": [
+      1048.2158191111496,
+      2102.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/iKRKAPzv37du.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Casse",
+    "coords": [
+      939.447574287447,
+      2096.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/gcv2zbIsf6F6.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "MC Los Bandoleros",
+    "coords": [
+      919.6931257038898,
+      2056.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/nszfIwLPzyoN.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Benny's",
+    "coords": [
+      1098.4408732565191,
+      2208
+    ],
+    "image": "https://static.wikia.nocookie.net/failyv/images/9/93/Bennys_Exterior.png/revision/latest/scale-to-width-down/1000?cb=20210923183929&path-prefix=fr",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Forum Drive",
+    "coords": [
+      1013.9218400762367,
+      2243.5
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Quartier F4L",
+    "coords": [
+      1059.9663822229923,
+      2279
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Quartier OBB",
+    "coords": [
+      845.9362557394091,
+      2338.5
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Xero 24",
+    "coords": [
+      1118.9718444078662,
+      2403
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/vNNIPuT65GQU.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Gym plage",
+    "coords": [
+      996.4231915446591,
+      1807.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/wmLmBHMDdwmF.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Skatepark plage",
+    "coords": [
+      1039.432877068353,
+      1769
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ZPHhBwW7ddxN.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Marina",
+    "coords": [
+      1080.944026682838,
+      1949.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ExEXJ3NMuXSo.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Weazel News",
+    "coords": [
+      1267.9911028328856,
+      2062.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/Xg5kx76k4IEH.png",
+    "color": "#f75e5e"
+  },
+  {
+    "name": "LTD",
+    "coords": [
+      1263.4900892315688,
+      2010
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/xJM2W26PPdwR.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Mausolé chinois",
+    "coords": [
+      1280.7439747032834,
+      1938
+    ],
+    "image": null,
+    "color": "#fd6060"
+  },
+  {
+    "name": "PDP Vespucci",
+    "coords": [
+      1295.988850385515,
+      1857.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/dOQviBvS4Huk.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Burger Shot",
+    "coords": [
+      1268.4826561552456,
+      1818
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/Zn0CLJW2VmED.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Ponton Fête foraine",
+    "coords": [
+      1290.9877241618296,
+      1688
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/uq6UGUCIaXDr.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Fête foraine",
+    "coords": [
+      1188.9647491986484,
+      1633.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ah4MXp1SXVLy.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Héliport Marina",
+    "coords": [
+      1045.9590054578532,
+      1999
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/pFYVs3glAjM1.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Magasin de Masque",
+    "coords": [
+      1055.2061335874555,
+      1800.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/dZEgIXWIvcP7.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "PDP Mission row",
+    "coords": [
+      1229.9414363683618,
+      2475
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/pYKKENtNKx9D.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Fourrière",
+    "coords": [
+      1099.4230272120726,
+      2490
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/EhlNICAp5kgY.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Quartier BGS",
+    "coords": [
+      1065.9078143011843,
+      2411.5
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Unicorn",
+    "coords": [
+      1100.4234813288153,
+      2351
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/LevT82sQOBdm.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Vert",
+    "coords": [
+      1085.916896636043,
+      2458.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/DR1SBP0lF7Ha.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Quartier Ukrainien",
+    "coords": [
+      1008.44198658609,
+      2472
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/n0bL0umK4jot.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Walker Logistics",
+    "coords": [
+      327.6857512138889,
+      2377
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/M7NHADdsJ4ih.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Aeroport",
+    "coords": [
+      571.9473224578195,
+      1900
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/xmzp6CbTM1oN.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Maze Bank Arena",
+    "coords": [
+      832.9536800922207,
+      2169.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/jGEAFshdyoAr.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Motel",
+    "coords": [
+      924.8585426345758,
+      2517.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/KP6rdlrZzGzP.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Allée Marchande",
+    "coords": [
+      1325.4487568223167,
+      2478
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/umcFU1TzG106.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Binco",
+    "coords": [
+      1304.444026682838,
+      2464.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/KK9luixSuGCc.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Gallerie Marchande",
+    "coords": [
+      1328.886465132257,
+      1789.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/sSAGbBgWD1ms.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Usine de rail",
+    "coords": [
+      1377.9371350051529,
+      2480
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/r4ivD8ZCVrJ8.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Depot de bus",
+    "coords": [
+      1374.9739842328684,
+      2456.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/gTtzVPc1ORXi.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hopital Pillbox",
+    "coords": [
+      1390.2449883046002,
+      2424.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/waCJQQR7KdeX.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Place des cubes",
+    "coords": [
+      1254.9625530624621,
+      2376
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/QPeFDZ6uElr9.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking central",
+    "coords": [
+      1312.9756172572122,
+      2389.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/prClcVS2QR6Q.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Fleeca place des cubes",
+    "coords": [
+      1208.4605258598285,
+      2349.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/SE9k9a7k9MHG.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Ammu-nation",
+    "coords": [
+      1190.4564714545613,
+      2301.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/2KMHmzQaez2T.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Concessionnaire Sud",
+    "coords": [
+      1184.207259811141,
+      2275.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/sbANdScTfAkt.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Chantier concessionnaire",
+    "coords": [
+      1219.4651996881228,
+      2235.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/N74UdiVxQdSH.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Arcadius",
+    "coords": [
+      1383.7271376591873,
+      2228
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/WQrHdBblFR02.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Rouge",
+    "coords": [
+      1325.213960842069,
+      2161
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/6MyXGoIEYbST.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Multicolore",
+    "coords": [
+      1352.4628346183836,
+      1813.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/rQHnOSiHaFUS.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Cinema",
+    "coords": [
+      1422.978714372347,
+      1844
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/mIXTU3dP9we1.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "SAMS SUD",
+    "coords": [
+      1468.4627219960148,
+      2342
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/kFmdkTq5FBln.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "LSC",
+    "coords": [
+      1583.4956640388114,
+      2152.25
+    ],
+    "image": null,
+    "color": "#fd4e4e"
+  },
+  {
+    "name": "DOJ",
+    "coords": [
+      1551.7385125184094,
+      2071.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/p8zzepPLwDCh.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Life Invader",
+    "coords": [
+      1529.4832755782725,
+      1862.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/qWqIWt5Jh89j.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Delpero Freeway",
+    "coords": [
+      1418.9635103525945,
+      2168
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Barage",
+    "coords": [
+      1616.9844581131422,
+      2964
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ZbjDiYazp0T1.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Olympic Freeway",
+    "coords": [
+      1140.4407606341506,
+      2320.5
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "La Puerta Freeway",
+    "coords": [
+      1235.8526899419562,
+      2134
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Palamino Freeway",
+    "coords": [
+      1268.8673308498658,
+      2985
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Elysian Fields Freeway",
+    "coords": [
+      895.8722862340812,
+      2748
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "GOH",
+    "coords": [
+      1571.466325911808,
+      1246
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Bahamas",
+    "coords": [
+      1376.9649744433855,
+      1726.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/YxXW7tmMQKOD.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Rooftop",
+    "coords": [
+      1408.4720696526033,
+      1711
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/0COOud30lM5D.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Belle-Vue",
+    "coords": [
+      1501.9931300355192,
+      1492
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/xe03xUwr0ppr.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Pacific Bluffs",
+    "coords": [
+      1651.9622715065407,
+      1088.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/vo4KTc6A8qNU.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Université",
+    "coords": [
+      1708.963172485489,
+      1621
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/6VbByTtOLdwY.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Wenger Clinique",
+    "coords": [
+      1527.4790522394526,
+      2154.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/eCOCaHGK8LGW.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Bijouterie",
+    "coords": [
+      1533.7404834098588,
+      2032.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/oYmihogwppFw.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Cabinet D'avocat",
+    "coords": [
+      1489.2304600190591,
+      2058.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/8B6CYti6LDea.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hopital Mount Zonah ",
+    "coords": [
+      1497.9824309105086,
+      2101.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ay2hYpxi7ytP.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Daily Globle",
+    "coords": [
+      1389.474322099974,
+      2169
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/zi8Zjd4ByoOS.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Musée",
+    "coords": [
+      1386.4736463657628,
+      2071.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/YyQszCFRDDa5.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Blanc",
+    "coords": [
+      1335.212102572988,
+      2107.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/VrYcbxwtJMwO.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "?",
+    "coords": [
+      1246.4863726934072,
+      2183.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/HXfnGc3niVjo.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Banner Hotel",
+    "coords": [
+      1200.9761240578705,
+      2165
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/hUIBMJpFatHm.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Brique",
+    "coords": [
+      1190.9762929914234,
+      2475
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/54jCEHxp1l0d.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Station éléctrique",
+    "coords": [
+      981.986316382223,
+      2511.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/Ualu20Xd2gR1.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Quartier El Rancho",
+    "coords": [
+      804.455570475613,
+      2437
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Groove Street",
+    "coords": [
+      889.9349042709867,
+      2279
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "LTD Groove Street",
+    "coords": [
+      921.472013341419,
+      2264.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/htbeT1LfMykv.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Skatepark Quartier SUD",
+    "coords": [
+      958.2302910855063,
+      2284.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/aVqwp3uxgVoj.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parc Quartier Sud",
+    "coords": [
+      989.737386294724,
+      2324.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/BjHzQZdgfLhC.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Davis Avenue",
+    "coords": [
+      982.235696959196,
+      2359.75
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Strawberry Avenue",
+    "coords": [
+      1017.4936368361778,
+      2311.75
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Eglise Forum Drive",
+    "coords": [
+      1021.9731958762886,
+      2294.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/gfRnTvq9p7yU.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Dechetterie",
+    "coords": [
+      1007.8979641341073,
+      2160
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/4ufIkzambPkI.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Entrepot de cochon",
+    "coords": [
+      1098.9597375032488,
+      2163
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/mk26mQ7gqoDQ.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Carwash",
+    "coords": [
+      1069.2226890756303,
+      2301.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/OrbtNXxBMhiz.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Binco Quartier Sud",
+    "coords": [
+      1068.2216191631292,
+      2326.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/uqg7fngJcVZG.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Garage auto",
+    "coords": [
+      1105.7300658407694,
+      2287
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/WqVWIz6sUADl.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Fridgit",
+    "coords": [
+      986.9320887117733,
+      2680.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/BPisxaTtlStS.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Pizzeria",
+    "coords": [
+      1328.963960842069,
+      2619.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/JbH5DLeTyzW9.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Chantier Little Seoul",
+    "coords": [
+      1251.968015247336,
+      2106
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/WdbuFvJb3FGZ.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Temple Coréen",
+    "coords": [
+      1135.941886857836,
+      2038.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/2M6X82mQKBbm.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Binco Cannaux",
+    "coords": [
+      1190.4541626960063,
+      1964
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/7abgZ3LTsOSL.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Temple Chinois",
+    "coords": [
+      1322.4838950012995,
+      1891.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/eT8yLWtBRlJv.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Eglise Little Seoul",
+    "coords": [
+      1347.989638742095,
+      1978.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/qCJG4aRZHUIB.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Motel Vespucci",
+    "coords": [
+      1258.9372693407258,
+      1755
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/Aj2iutyLB5qM.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Spada",
+    "coords": [
+      1071.7239279216842,
+      1871.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/B1OrJ40UegHt.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Maze bank plage",
+    "coords": [
+      1299.216776401282,
+      1766
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/crG7osKs6Zbh.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Motel Bahamas",
+    "coords": [
+      1358.7208871177336,
+      1696.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/QDiGYjMHuCcK.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Fuente Blanca",
+    "coords": [
+      2077.7268979732053,
+      2876
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/b194FfEFqFkl.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Palmer Station",
+    "coords": [
+      2247.7852971487464,
+      3402
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/dlc2ixJZdOgV.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Popular Street",
+    "coords": [
+      819.889900377877,
+      2601
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Cypress",
+    "coords": [
+      613.8428375128822,
+      2657
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ctGteaAHdb84.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Merry Weather",
+    "coords": [
+      345.68842322226044,
+      2507
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/KQgkyLavrN8x.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Terminal",
+    "coords": [
+      345.68842322226044,
+      2701
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/Q1LPMF0dIqfW.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Usine de ferraille",
+    "coords": [
+      978.4839402267262,
+      2055.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/htVTjhnF7LWd.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "LSC Aeroport",
+    "coords": [
+      815.3813122638269,
+      1838
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/yOCckC5fcODQ.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hotel opium",
+    "coords": [
+      710.3452421848162,
+      1994
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/HLzMOh11Jtgn.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Grastenburg Hotel",
+    "coords": [
+      753.3600137409825,
+      1946.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ui6Ff5j7rEmX.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Champ de pétrole",
+    "coords": [
+      889.7512882171076,
+      2940
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/Xn0P4ogk5SPj.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Torture Vagos",
+    "coords": [
+      750.19177258674,
+      2345.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/w7sEqudRkhZm.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Champs de bus",
+    "coords": [
+      634.9375644108554,
+      2731.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/YtUxz56O1qpp.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Quartier Elburro",
+    "coords": [
+      935.2180522157335,
+      2810
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Usine de Textile",
+    "coords": [
+      1238.9194434902097,
+      2590
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/Vm6AJkA5qBiZ.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "LSC Mesa",
+    "coords": [
+      1184.40072140158,
+      2593.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/bo2w3RV9X3Mx.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "PDP Mesa",
+    "coords": [
+      1108.8747852971487,
+      2630
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/MJYIsp3UnUCh.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Fonderie",
+    "coords": [
+      842.8677430436276,
+      2703.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/pXI5VmgLUnNN.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Usine de viade",
+    "coords": [
+      765.3201648917898,
+      2679
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/pPg9UceV1WDT.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Ammu-nation Palamino",
+    "coords": [
+      1775.9182411542427,
+      3329
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/2dMaDebl5E4g.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "PDP Vinewood",
+    "coords": [
+      1627.4985400206115,
+      2524.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/MlAcryfbXS1l.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Mirror Park",
+    "coords": [
+      1398.7983510821023,
+      2752
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Human labs",
+    "coords": [
+      3141.7993816557882,
+      3706
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/tvG0RBm9MRjM.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Vine",
+    "coords": [
+      2473.8945379594643,
+      1559
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/5gKauZUubMok.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Morning wood",
+    "coords": [
+      1522.9005496392992,
+      1701.5
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Tequi-la-la",
+    "coords": [
+      1745.4398832016489,
+      2063
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/lnbYJ4xNKK4F.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Eclipse Tower",
+    "coords": [
+      1761.445379594641,
+      2020
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/O5Mw8aOe9da3.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Spanish Avenue",
+    "coords": [
+      1651.3943661971832,
+      2254
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Hawick avenue",
+    "coords": [
+      1553.8608725523875,
+      2345.5
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Quartier Carter",
+    "coords": [
+      949.889900377877,
+      2406.5
+    ],
+    "image": null,
+    "color": "#0000ff"
+  },
+  {
+    "name": "Ammu-Nation",
+    "coords": [
+      766.4479560288561,
+      2622.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/qO7RBfam7Lo8.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Usine de Manufacture",
+    "coords": [
+      1108.9560288560633,
+      2596.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/mCLyyVukgzz7.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Salle D'arcade",
+    "coords": [
+      1302.4141188594986,
+      2590.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/SEVfF7bsIiZm.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Horny's",
+    "coords": [
+      1486.4081071796634,
+      2794
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/cAghsdBWVilm.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Taxi",
+    "coords": [
+      1563.2179663345928,
+      2656.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/lpuLDvvH8Kdg.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Casino",
+    "coords": [
+      1645.496221229818,
+      2678
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/APWp05PJKy5g.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hippodrome",
+    "coords": [
+      1669.2543799381656,
+      2748.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/RkLB0o0zWkuU.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Power Station",
+    "coords": [
+      1686.9850566815528,
+      2576
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/he5yIBD9X9R4.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hotel Pacific banque",
+    "coords": [
+      1706.491583648231,
+      2484.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/i1sad3dCMS9D.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Pacific banque",
+    "coords": [
+      1719.251374098248,
+      2398.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/uCwJbpe0P9nP.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Vinewood Boulevard",
+    "coords": [
+      1681.4884060460322,
+      2439.75
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Eclipse Boulevard",
+    "coords": [
+      1729.4507042253522,
+      2191.25
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Los Santos Freeway",
+    "coords": [
+      1703.0408794228788,
+      2666
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Senora Freeway",
+    "coords": [
+      2622.8419787014773,
+      3080
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Route 68",
+    "coords": [
+      2707.777739608382,
+      2703
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Joshua Road",
+    "coords": [
+      3048.894881484026,
+      2690
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Atom",
+    "coords": [
+      1736.4372208862933,
+      2348.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/VCVkFZG1iWqP.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Eglise Rockford",
+    "coords": [
+      1619.888869804191,
+      1984
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/lYkvaIEi09qU.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Dynasty 8",
+    "coords": [
+      1554.685589144624,
+      1943.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/hlDzROPUonn1.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Atom",
+    "coords": [
+      1454.439711439368,
+      1665.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/GhudwypVl34h.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Morningwood",
+    "coords": [
+      1479.383029886637,
+      1805.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ZNiEn4DOINUj.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hotel Golf",
+    "coords": [
+      1552.4081071796634,
+      1816
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/1umNK8OIDLpd.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Hotel Golf",
+    "coords": [
+      1538.4032978357952,
+      1774
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ewqAn7Do8LOF.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Arcadius",
+    "coords": [
+      1272.9074201305393,
+      2317.5
+    ],
+    "image": null,
+    "color": "#fd6060"
+  },
+  {
+    "name": "Terrain de cross",
+    "coords": [
+      2555.628993473033,
+      2708
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/UB9hshKoiBQL.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Bolingbrook",
+    "coords": [
+      2673.66952937135,
+      2986
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/tDiHxFiNNt90.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Base militaire",
+    "coords": [
+      2875.738921332875,
+      1470
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/JBqKTaWiwGYS.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Ammu-nation Route 68",
+    "coords": [
+      2728.836482308485,
+      1866
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/3jO1TYpWqvOM.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Route 68",
+    "coords": [
+      2661.7990381312266,
+      1800
+    ],
+    "image": null,
+    "color": "#636363"
+  },
+  {
+    "name": "Motard",
+    "coords": [
+      2858.872895912058,
+      2420
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/iw77bWh5i6jy.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Motel",
+    "coords": [
+      3071.948986602542,
+      2925
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/wIZ6Bv8grXAb.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Sandy Service",
+    "coords": [
+      3115.4639299209894,
+      2988
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/JJnSNLksuBi5.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Captain Fish",
+    "coords": [
+      3149.725695637238,
+      2979
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ELrNe7ZfFM2l.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Restaurant Captain Fish",
+    "coords": [
+      3159.729130882858,
+      2917.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/7ki6PwEHOlx0.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hotel Sicilien",
+    "coords": [
+      3157.478357952594,
+      2951.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/ahxjLLutCqOZ.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Gouvernement",
+    "coords": [
+      3164.9809343868087,
+      3002.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/CzAoN3FDgDcr.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "PDP Nord",
+    "coords": [
+      3106.4608381999315,
+      3029.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/lVXrdQwpFiqC.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Hopital Nord",
+    "coords": [
+      3094.2066300240467,
+      3002.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/C9lAfqcRL42S.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Otto's Garage",
+    "coords": [
+      3128.218309859155,
+      3064
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/QdaQg266RPCW.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parc Alien",
+    "coords": [
+      3166.7185675025767,
+      3281.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/JfdT3FG5rxeC.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Tumbleweed",
+    "coords": [
+      3372.5392476812094,
+      3377.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/bUunekrQlQ0o.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Redwood",
+    "coords": [
+      3392.2960322913086,
+      3455.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/YFKFLI1tfjs7.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "You Tool",
+    "coords": [
+      3027.372724149777,
+      3388.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/8okejUsdbykL.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Casse à Avion",
+    "coords": [
+      2866.317416695294,
+      3253.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/lB9r6TJZKoVN.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Champs Eolienne",
+    "coords": [
+      2482.77567846101,
+      3169
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/0VT2ByZyC6AX.png",
+    "color": "#0000ff"
+  },
+  {
+    "name": "Vinewood Bowl",
+    "coords": [
+      1836.7059429749224,
+      2564
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/luHMJB5lCclN.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Observatoir",
+    "coords": [
+      2068.3924768120924,
+      2123.5
+    ],
+    "image": "https://static.wikia.nocookie.net/gta/images/9/9c/Observatoire_Galileo.PNG/revision/latest?cb=20191003202056&path-prefix=fr",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Ferme",
+    "coords": [
+      2509.8773617313636,
+      2916
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/BtrBGEEwNGGe.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Drinks and co",
+    "coords": [
+      2383.8340776365512,
+      2793
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/nJEv3NrFW4Mq.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Mine",
+    "coords": [
+      2769.769838543456,
+      3438
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/aA6hPL2vG40O.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Dino Rose",
+    "coords": [
+      2688.3715218138095,
+      3317
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/JOkft64GUoTt.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Camp de Caravane",
+    "coords": [
+      2660.8620748883545,
+      3238
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/EPOfYfDTBWkB.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "FBI",
+    "coords": [
+      1478.8041909996564,
+      3299
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/OtQaEJL9VK2W.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Auto Exotic",
+    "coords": [
+      1565.9151494331845,
+      2508.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/7tqeRE9ceItT.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Quartier Mexicain",
+    "coords": [
+      1493.89041566472,
+      2451.5
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/8rr8UYl83BJY.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Ancien concessionnaire",
+    "coords": [
+      1573.4595499828238,
+      2340
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/O4SdzuIEViW1.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Benefactor",
+    "coords": [
+      1659.7063723806252,
+      2243.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/JYXcIqGS5Ygs.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Parking Rose",
+    "coords": [
+      1676.2041394709722,
+      2220.75
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/SjMKSjIt9H1C.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Elgin House",
+    "coords": [
+      1694.460408794229,
+      2269.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/e4VNEq4KpjTa.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Centry Manor",
+    "coords": [
+      1768.9426313981448,
+      2263
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/IM6LMQe3XcZ9.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Richman Hotel",
+    "coords": [
+      1751.4456372380625,
+      1761
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/fqVWfhZ3pJqb.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Villa Plage",
+    "coords": [
+      1377.65578838887,
+      1547.25
+    ],
+    "image": "https://r2.fivemanage.com/Pv2zrm7JkqbwoSXwYkXGT/GBgrpRLwvEuk.png",
+    "color": "#fd6060"
+  },
+  {
+    "name": "Union Depository",
+    "coords": [
+      1369.8115767777397,
+      2295
+    ],
+    "image": "https://static.wikia.nocookie.net/gta/images/1/13/UnionDepository-entree.jpg/revision/latest?cb=20140915210923&path-prefix=fr",
+    "color": "#fd6060"
+  }
+];
+
+// === MARKERS ===
+function markerIcon(col){
+  return L.divIcon({
+    html:`<div class="marker-icon" style="background:${col}"></div>`,
+    className:"", iconAnchor:[16,32]
+  });
+}
+
+points.forEach(p=>{
+  const marker = L.marker(p.coords,{icon:markerIcon(p.color)}).addTo(map);
+
+  // Tooltip for ALL markers
+  marker.bindTooltip(p.name, { direction:"top", offset:[0,-15] });
+
+  const icon = marker._icon.querySelector(".marker-icon");
+  marker.on("mouseover", ()=> icon.classList.add("hover"));
+  marker.on("mouseout", ()=> icon.classList.remove("hover"));
+
+  // Click → popup only if image exists
+  marker.on("click", () => {
+    if(!p.image) return;
+    popupTitle.innerText = p.name;
+    popupImg.src = p.image;
+    imagePopup.style.display="flex";
+  });
+});
+
+// === POPUP CLOSE ===
+const imagePopup=document.getElementById("imagePopup");
+const popupImg=document.getElementById("popupImg");
+const popupTitle=document.getElementById("popupTitle");
+
+imagePopup.onclick=()=>{
+  popupImg.src="";
+  popupTitle.innerText="";
+  imagePopup.style.display="none";
+};
+</script>
+
+</body>
+</html>
